@@ -4,7 +4,7 @@ const regis = new Schmea({
     email_id:{type:String,default:''},
     password:{type:String,default:''},
     first_name:{type:String,default:''},
-    birthday:{type:Date,default:''},
+    birthday:{type:String,default:''},
     gender:{type:String,default:''},
     profile:{type:String,default:''},
     // otp:{type:Number,required:true},
@@ -13,7 +13,7 @@ const regis = new Schmea({
     country_code:{type:String,required:true},
     is_verify:{type:Number,default:0},
 
-    age:{type:Number,default:''},
+    age:{type:String,default:""},
     tittle:{type:String,default:''},
     work:{type:String,default:''},
     bio:{type:String,default:''},

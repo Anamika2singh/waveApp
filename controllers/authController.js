@@ -128,7 +128,7 @@ exports.number=async(req,res,next)=>{
    try{
     const v = new Validator(req.body,{
         phone_number:'required|integer',
-        country_code:'required'
+        country_code:'required|integer'
      })
      const matched = await v.check();
      let phone_number=v.errors.phone_number?v.errors.phone_number.message:''
