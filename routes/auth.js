@@ -23,4 +23,6 @@ router.post('/login',authController.login)
 router.post('/addNumber',authController.number)
 router.post('/otpVerify',authController.otpVerify)
 
+
+
 module.exports = router;

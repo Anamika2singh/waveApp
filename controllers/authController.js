@@ -8,6 +8,7 @@ const multer = require('multer');
 mongoose.set('useFindAndModify', false);
 
 const userTable = require('../models/user');
+
 let saltRounds = 10;
 
 //user register
@@ -26,6 +27,8 @@ exports.register = async(req,res,next)=>{
     phone_number:'required|integer',
     birthday:'required',
     gender:'required',
+    lat:'required|integer',
+    log:'required|integer'
  })
  const matched = await v.check();
  let email_id=v.errors.email_id?v.errors.email_id.message:''
@@ -34,8 +37,10 @@ exports.register = async(req,res,next)=>{
  let phone_number=v.errors.phone_number?v.errors.phone_number.message:''
  let birthday=v.errors.birthday?v.errors.birthday.message:''
  let gender=v.errors.gender?v.errors.gender.message:''
+ let lat=v.errors.lat?v.errors.lat.message:''
+ let log=v.errors.log?v.errors.log.message:''
 if(!matched){
-      let err=email_id+password+first_name+phone_number+birthday+gender
+      let err=email_id+password+first_name+phone_number+birthday+gender+lat+log
    helper.validation_error(res,err)
 }
  else{
@@ -52,12 +57,16 @@ if(!matched){
                              }
                 
                  let updateTable = await userTable.findByIdAndUpdate({'_id':found._id},{$set:
-                             {email_id:req.body.email_id,
+                             {
+                                email_id:req.body.email_id,
                                 password:bcrypt.hashSync(req.body.password,saltRounds),
                                 first_name:req.body.first_name,
                                 birthday:req.body.birthday,
                                 gender:req.body.gender,
-                                profile:req.file.filename}
+                                lat:req.body.lat,
+                                log:req.body.log ,
+                                profile:req.file.filename
+                                }
                             })
                   if(updateTable ){
                 //    console.log("registered successfully");
@@ -147,7 +156,8 @@ let checkDuplicate = await userTable.findOne({'phone_number':req.body.phone_numb
             phone_number:req.body.phone_number,
             country_code:req.body.country_code,
             otp:Math.floor(1000+Math.random()*9000)
-          }).then(user=>{helper.success(res,"number saved",user)})
+          }).then(user=>{helper.success(res,"number saved",user)
+            })
           .catch(err=>{helper.db_error(res,err)})
     }
 }
@@ -198,4 +208,3 @@ exports.otpVerify=async(req,res,next)=>{
        }
 }
 
-   
