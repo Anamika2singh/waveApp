@@ -13,6 +13,13 @@ module.exports = {
         error: e.message,
       });
     },
+
+    db_errorwithoutE: (res) => {
+      return res.status(500).json({
+        statusCode: 500,
+        message: "internal server error"
+      });
+    },
     went_wrong: (res,e) => {
       return res.status(400).json({
         statusCode: 400,
@@ -50,10 +57,27 @@ module.exports = {
             message: msg,
           });
     } ,
+    went_wrongWithdata: (res,msg,data) => {
+      return res.status(400).json({
+        statusCode: 400,
+        message: msg,
+        data : data
+      });
+    },
     went_wrongwtihoutE: (res) => {
       return res.status(400).json({
         statusCode: 400,
         message: "Something went wrong",
       });
     },
+    getAge(dateString) {
+      var today = new Date();
+      var birthDate = new Date(dateString);
+      var age = today.getFullYear() - birthDate.getFullYear();
+      var m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+      }
+      return age;
+  }
   };

@@ -11,7 +11,8 @@ mongoose.connect(
   config.MONGODB_URL , { useNewUrlParser: true, useUnifiedTopology: true }) 
          .then(() => console.log("connection successful"))
           .catch((err) => console.error(err));
- 
+      
+app.use(express.static('public/images')); 
 app.use(bodyparser.json({extended:true}))
 app.use(bodyparser.urlencoded({extended:true}))
 app.use('/',authroute);

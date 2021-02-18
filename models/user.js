@@ -10,8 +10,8 @@ const regis = new Schmea({
     gender:{type:String,default:''},
     profile:{type:String,default:''},
     // otp:{type:Number,required:true},
-    lat:{type:Number,default:''},
-    log:{type:Number,default:''},
+    lat:{type:String,default:''},
+    log:{type:String,default:''},
 
     device_type:{type:String,default:''},
     device_token:{type:String,default:''},
@@ -20,8 +20,9 @@ const regis = new Schmea({
     otp:{type:Number,required:true},
     country_code:{type:String,required:true},
     is_verify:{type:Number,default:0},
-
-    age:{type:Number,default:0},
+    is_register:{type:Number,default:0},
+    is_payment:{type:Number,default:0},
+    age:{type:String,default:''},
     tittle:{type:String,default:''},
     work:{type:String,default:''},
     bio:{type:String,default:''},
