@@ -27,6 +27,18 @@ const regis = new Schmea({
     work:{type:String,default:''},
     bio:{type:String,default:''},
     education:{type:String,default:''},
+ 
+    //users setting
+     
+     gender_Interest:{type:Number,default:2},//0 for women 1 for men and 2 for men and women both 
+      distance:{type:String,default:100},
+     age_Rangestart:{type:String,default:15},
+     age_Rangend:{type:String,default:40},
+     useCurrent_location:{type:String,default:0},
+      new_Matches:{type:Number,default:0},
+      messages:{type:Number,default:0},
+      waves:{type:Number,default:0},
+     check:{type:Number,},//1 for update setting and 0 for fetch usersettings
 
     status:{type:Number,default:0},
     created_at:{type:Date,default:Date.now},

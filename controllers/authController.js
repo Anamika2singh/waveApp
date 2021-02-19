@@ -11,7 +11,6 @@ const fs = require('fs');
 
 const userTable = require('../models/user');
 const selfieTable = require('../models/selfie');
-const settingTable = require('../models/setting');
 const { findOne } = require('../models/user');
 
 let saltRounds = 10;
@@ -382,32 +381,73 @@ exports.matches = async(req,res,next)=>{
    console.log(req.userData)
    let found = await userTable.findOne({'_id':req.userData._id})
    if(found){
-          console.log("user exists")
-         console.log(found)
-         let new_data = []
-         userTable.find({},{created_at:0,updated_at:0,status:0,},(err,data)=>{
-       if(data){
-        //  console.log(data.profile)
-         data.forEach(element=>{
-             console.log(element.profile)
+           let userregis = await  userTable.aggregate([
+   {$lookup:{from :"selfies",localField :"_id" ,foreignField : "user_Id",as : "userSelfies"}},
+   {$unwind:{path:'$userSelfies',preserveNullAndEmptyArrays:true}},
+   {$project:{
+     'email_id':1,
+     'password':1,
+     'first_name':1,
+     'birthday':1,
+     'gender':1,
+      'profile':1,
+      'age':1,
+      'tittle':1,
+      'work':1,
+      'bio':1,
+      'education':1,
+      'phone_number':1,
+      'country_code':1,
+     'selfie':'$userSelfies.selfie',
+     'selfie_id':'$userSelfies._id'
+   } }
+           ])
+          // console.log(userregis)
+         let final_arr =[]
+          let new_arr =[]
+               userregis.forEach(element=>{
+            //  console.log(element.profile)
                     let url=element.profile;
            let getImage = ('http://192.168.1.131:3000/'+url)//append link with filename
-           console.log(getImage)
-           let check = element.toJSON();
-         check.getImage = getImage
-        //  console.log(check)
-         new_data.push(check)
+          //  console.log(getImage)
+           element.getImage = getImage 
+         element.selfie.forEach(ele=>{
+           console.log(ele)
+           let url= ele
+           let getselfie = ('http://192.168.1.131:3000/'+url)//append link with filename
+           new_arr.push(getselfie)
+          //  if(element == undefined){
+          //    e
+          //  }
+         
          })
+         element.getSelfie_arr = new_arr
+         console.log(element)
+        final_arr.push(element)
+         new_arr = [];
+          })
+        res.send(final_arr)
+          // console.log(new_data)
+          // res.send(new_data)
         
-          console.log(new_data)
-
-          helper.success(res,"all matches",new_data)
-       }
-          else{
-            console.log("no matches found")
-             helper.not_found(res,"no matches found")
-           }
-         })
+      //    console.log(found)
+      //    let new_data = []
+      //    userTable.find({},{created_at:0,updated_at:0,status:0,},(err,data)=>{
+      //  if(data){
+      //   //  console.log(data.profile)
+      //    data.forEach(element=>{
+      //        console.log(element.profile)
+      //               let url=element.profile;
+      //      let getImage = ('http://192.168.1.131:3000/'+url)//append link with filename
+      //      console.log(getImage)
+      //      let check = element.toJSON();
+      //    check.getImage = getImage
+      //   //  console.log(check)
+      //    new_data.push(check)
+      //    })
+        
+          // helper.success(res,"all matches",new_data)
+    
    }
    else{
      helper.not_found(res,"user not exists")
@@ -504,9 +544,9 @@ exports.selfiebook = async(req,res,next)=>{
        }
     }
   }
-  
   else{
     console.log("user not found")//user not found in table
+    helper.not_found(res,"user not found")
   }
   }
   catch(err){
@@ -537,15 +577,11 @@ exports.Setting = async(req,res,next)=>{
      console.log(req.userData._id);
      let found = await userTable.findOne({'_id':req.userData._id})
     
-     if(found){
+     if(found){//if user found in th table
        if(req.body.check == 1){ //1 for update setting
       
-     let usersetting = await settingTable.findOne({'user_Id':req.userData._id})//if user setting exists then update
-        if(usersetting){
-          console.log("setting table"+usersetting);
-          console.log(usersetting._id)
        var arr = {};
- const its = ["gender_Interest","distance","age_Range","useCurrent_location", "new_Matches","messages","waves"];
+ const its = ["gender_Interest","distance","age_Rangestart","age_Rangend","useCurrent_location", "new_Matches","messages","waves"];
        for (const iterator of its) {
         console.log(iterator)  
         if (req.body[iterator]) {
@@ -553,53 +589,39 @@ exports.Setting = async(req,res,next)=>{
          }
         }
          console.log(arr);
-         let update = await settingTable.findByIdAndUpdate(
-           { '_id':usersetting._id},
+         let update = await userTable.findByIdAndUpdate(
+           { '_id':req.userData._id},
            { $set: arr }
          );
-         if(update){
-           
+         if(update){ //if setting updated
             console.log("updated")
-            settingTable.findOne({'_id':usersetting._id},(err,updateData)=>{
+            userTable.findOne({'_id':req.userData._id},
+            {gender_Interest:1,distance:1,age_Rangestart:1,age_Rangend:1,useCurrent_location:1,new_Matches:1,messages:1,waves:1},
+            (err,updateData)=>{
                 if(err) helper.went_wrong(res,err)
                 else helper.success(res,"user setting updated successfully",updateData)
             })
-         }else{
+         }else{//if setting can't update
            helper.db_errorwithoutE(res)
          }
-      }
-        else{ //user setting not present then create user setting
-
-
-      settingTable.create({
-        user_Id:req.userData._id,
-        gender_Interest:req.body.gender_Interest,//0 for women 1 for men and 2 for men and women both 
-         distance:req.body.distance,
-         age_Range:req.body.age_Range,
-         useCurrent_location:req.body.useCurrent_location,
-         new_Matches:req.body.new_Matches,
-         messages:req.body.messages,
-         waves:req.body.waves,
-        check:req.body.check,//1 for update and 0 for fetch
-      }).then(user=>{helper. success(res,"successfully added setting",user)})
-      .catch(err=>{helper.db_error(res,err)})
-      }
 
     }
       else{ //o for fetch setting
-         let usersetting = await settingTable.findOne({'user_Id':req.userData._id})
+         let usersetting = await userTable.findOne({'_id':req.userData._id},
+         {distance:1,age_Rangestart:1,age_Rangend:1,useCurrent_location:1,new_Matches:1,messages:1,waves:1,gender_Interest:1})
           if(usersetting){
             console.log(usersetting)
-            helper.success(res,"user setting",usersetting)
+            helper.success(res," default user setting",usersetting)
           }
           else{
             console.log("something went wrong!")
-             helper.not_found(res,"not found please add setting first")
+             helper.duplicate(res,"something went wrong!")
           }
       }
-}
-  else{
+    }
+  else{//if user not in the table
     console.log("user not exists")
+    helper.not_found(res,"user not exists")
   }
 }
   catch(err){
