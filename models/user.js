@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { number } = require('../controllers/authController');
-const Schmea =  mongoose.Schema;
-const regis = new Schmea({
+const Schema =  mongoose.Schema;
+const regis = new Schema({
     email_id:{type:String,default:''},
     password:{type:String,default:''},
     first_name:{type:String,default:''},
@@ -29,7 +29,6 @@ const regis = new Schmea({
     education:{type:String,default:''},
  
     //users setting
-     
      gender_Interest:{type:Number,default:2},//0 for women 1 for men and 2 for men and women both 
       distance:{type:String,default:100},
      age_Rangestart:{type:String,default:15},
@@ -38,7 +37,12 @@ const regis = new Schmea({
       new_Matches:{type:Number,default:0},
       messages:{type:Number,default:0},
       waves:{type:Number,default:0},
-     check:{type:Number,},//1 for update setting and 0 for fetch usersettings
+     check:{type:Number,default:0},//1 for update setting and 0 for fetch usersettings
+      
+     //users selfies
+     selfie:{type:Array,default:[]},
+     check_selfie:{type:Number,default:0},//1 for update and 0 for get
+
 
     status:{type:Number,default:0},
     created_at:{type:Date,default:Date.now},

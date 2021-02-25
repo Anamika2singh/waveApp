@@ -8,10 +8,11 @@ const bcrypt= require('bcrypt');
 const multer = require('multer');
 mongoose.set('useFindAndModify', false);
 const fs = require('fs');
+const ObjectId = mongoose.Types.ObjectId;
 
 const userTable = require('../models/user');
-const selfieTable = require('../models/selfie');
-const { findOne } = require('../models/user');
+const matchtable = require('../models/matching');
+const { findOne, findByIdAndUpdate, findOneAndUpdate } = require('../models/user');
 
 let saltRounds = 10;
 
@@ -58,18 +59,18 @@ if(!matched){
       let checkDuplicate =await  userTable.findOne({'email_id':req.body.email_id,'phone_number':req.body.phone_number})
                if(checkDuplicate){
                     helper.duplicate(res,"already registered with this mail and phone_number")
-                    return;
+                           return;
                              }
-                       let age =  helper.getAge(req.body.birthday) //calling getage to calculate age 
-                      //  console.log("your age is "+age)
+                             console.log(req.body.birthday)
+                       let age = helper.getAge(req.body.birthday) //calling getage to calculate age 
+                       console.log("your age is "+age)
                  let updateTable = await userTable.findByIdAndUpdate({'_id':found._id},{$set:
                              {
-                                age:age,
+                                 age:age,
                                 email_id:req.body.email_id,
                                 password:bcrypt.hashSync(req.body.password,saltRounds),
                                 first_name:req.body.first_name,
                                 birthday:req.body.birthday,
-                                age: age,
                                 gender:req.body.gender,
                                 lat:req.body.lat,
                                 log:req.body.log ,
@@ -376,78 +377,59 @@ catch(err){
     helper.went_wrong(res,err)
  }
 }
-exports.matches = async(req,res,next)=>{
+exports.matches = async(req,res,next)=>{ 
   try{
-   console.log(req.userData)
+  //  console.log(req.userData)
    let found = await userTable.findOne({'_id':req.userData._id})
+  //  console.log("user who wants to fetch "+found)
    if(found){
-           let userregis = await  userTable.aggregate([
-   {$lookup:{from :"selfies",localField :"_id" ,foreignField : "user_Id",as : "userSelfies"}},
-   {$unwind:{path:'$userSelfies',preserveNullAndEmptyArrays:true}},
-   {$project:{
-     'email_id':1,
-     'password':1,
-     'first_name':1,
-     'birthday':1,
-     'gender':1,
-      'profile':1,
-      'age':1,
-      'tittle':1,
-      'work':1,
-      'bio':1,
-      'education':1,
-      'phone_number':1,
-      'country_code':1,
-     'selfie':'$userSelfies.selfie',
-     'selfie_id':'$userSelfies._id'
-   } }
-           ])
-          // console.log(userregis)
-         let final_arr =[]
-          let new_arr =[]
-               userregis.forEach(element=>{
-            //  console.log(element.profile)
-                    let url=element.profile;
-           let getImage = ('http://192.168.1.131:3000/'+url)//append link with filename
-          //  console.log(getImage)
-           element.getImage = getImage 
-         element.selfie.forEach(ele=>{
-           console.log(ele)
-           let url= ele
-           let getselfie = ('http://192.168.1.131:3000/'+url)//append link with filename
-           new_arr.push(getselfie)
-          //  if(element == undefined){
-          //    e
-          //  }
-         
-         })
-         element.getSelfie_arr = new_arr
-         console.log(element)
-        final_arr.push(element)
-         new_arr = [];
-          })
-        res.send(final_arr)
-          // console.log(new_data)
-          // res.send(new_data)
-        
-      //    console.log(found)
-      //    let new_data = []
-      //    userTable.find({},{created_at:0,updated_at:0,status:0,},(err,data)=>{
-      //  if(data){
-      //   //  console.log(data.profile)
-      //    data.forEach(element=>{
-      //        console.log(element.profile)
-      //               let url=element.profile;
-      //      let getImage = ('http://192.168.1.131:3000/'+url)//append link with filename
-      //      console.log(getImage)
-      //      let check = element.toJSON();
-      //    check.getImage = getImage
-      //   //  console.log(check)
-      //    new_data.push(check)
-      //    })
-        
-          // helper.success(res,"all matches",new_data)
-    
+           console.log("use filter"+found)
+            //  console.log(found.gender_Interest)
+             let gender_I = found.gender_Interest;
+             let match_Arr = [];
+    if(gender_I == 0){ // all user whose gender is female
+let findmatches = await userTable.find({'gender':'female',
+"age": { $gte: found.age_Rangestart, $lte:found.age_Rangend},
+_id:{$ne:found._id}})
+ if(findmatches.length>0){
+              console.log(findmatches)
+              match_Arr.push(findmatches)
+              helper.success(res,"all matches",findmatches)
+           }
+           else{
+            console.log('no matches found')
+            helper.not_found(res,"no matches found")
+           }
+          }
+         else if (gender_I == 1){// all user whose gender is male
+ let findmatches = await userTable.find({'gender':'male',
+ "age": { $gte: found.age_Rangestart, $lte:found.age_Rangend},
+ _id:{$ne:found._id}})  
+          if(findmatches.length>0){
+                    console.log(findmatches)
+                    match_Arr.push(findmatches)
+                    // helper.success(res,"all matches",findmatches)
+                 }
+                 else{
+                  console.log('no matches found')
+                  helper.not_found(res,"no matches found")
+                 }
+         }
+         else{//all user whose gender is male and female both
+          let findmatches = await userTable.find({'gender':['male','female'],
+          "age": { $gte: found.age_Rangestart, $lte:found.age_Rangend},
+          _id:{$ne:found._id}})
+          if(findmatches.length>0){
+                    console.log(findmatches)
+                    match_Arr.push(findmatches)
+                    helper.success(res,"all matches",findmatches)
+                 }
+                 else{
+                  console.log('no matches found')
+                  helper.not_found(res,"no matches found")
+                 }
+         }
+  
    }
    else{
      helper.not_found(res,"user not exists")
@@ -459,27 +441,31 @@ catch(err){
 }
 exports.selfiebook = async(req,res,next)=>{
   try{
-  console.log(req.userData._id)
+  // console.log(req.userData)
   let found = await userTable.findOne({'_id':req.userData._id})
   if(found){
-    if(req.body.check == 1){
+    console.log(found)
+    if(req.body.check_selfie == 1){ //user wants to update selfie
       console.log("to add pic")
-            let is_selfies = await selfieTable.findOne({'user_Id':req.userData._id})
-            if(is_selfies){
-                   console.log(is_selfies)
-                //  res.send(is_selfies)
-                  console.log("already in db"+is_selfies.selfie.length)
-                  let len = is_selfies.selfie.length
+          
+         let  is_selfies = found.selfie.length
+         console.log(is_selfies)
+            if(is_selfies >0){//if some selfie already there in database then
+                  //  console.log(is_selfies)
+                  console.log("already in db"+is_selfies)
+                  let len = is_selfies
                   let can_add = (5-len);
               if(len<5)
                  {
-
                     console.log("you can add")
-                    let selfie_arr=[]
-                    req.files.forEach(element => {
-                   selfie_arr.push(element.filename) 
-                        })
-                   console.log(selfie_arr)
+                    let selfie_arr = []
+                    for (let i = 0; i < req.files.length; i++) {
+                     selfie_arr.push({
+                         _id: ObjectId(),
+                         selfie: req.files[i].filename
+                           })
+                      }
+                     console.log(selfie_arr)
                    console.log("adding length"+selfie_arr.length)
                    let adding_len=selfie_arr.length;
                     if(adding_len > can_add){
@@ -488,14 +474,20 @@ exports.selfiebook = async(req,res,next)=>{
                     }
                      else{
 
-                 let final_arr= is_selfies.selfie.concat(selfie_arr)//using concat to join both the array of images
-                  console.log(final_arr)
-                  console.log(is_selfies._id)
-    let updated_selfie = await selfieTable.findByIdAndUpdate({'_id':is_selfies._id},{$set:{'selfie':final_arr}})   
+         let final_arr= found.selfie.concat(selfie_arr)//using concat to join both the array of images
+          console.log(final_arr)
+    let updated_selfie = await userTable.findByIdAndUpdate({'_id':req.userData._id},{$set:{'selfie':final_arr}})   
                if(updated_selfie){
                   console.log("updated")
                   console.log(updated_selfie)
-                helper.successWithnodata(res,"succesfully added pictures")
+                  let found = await userTable.findOne({'_id':req.userData._id})
+                 if(found){
+                  helper.success(res,"selfies",found.selfie)
+                 }
+                else{
+                  helper.not_found(res,"user not found")
+                }
+              
                }    
                else{
                  console.log("server errror");
@@ -505,24 +497,31 @@ exports.selfiebook = async(req,res,next)=>{
                   }
             else{
               console.log("limit exceed first delete some")
-            helper.login_failed(res,"limit exceed you can add only five first delete some")
+            helper.login_failed(res,"limit exceed you can add only five ,first delete some selfies")
               }
                 
             }
             else{ //first time adding selfie
-              let selfie_arr=[]
-               req.files.forEach(element => {
-              selfie_arr.push(element.filename) 
-                   })
-  
-                 console.log(selfie_arr);
-                let data = await selfieTable.create({
-                         user_Id: req.userData._id,
-                         selfie:selfie_arr,
-               })
-           if(data){
-                 console.log(data)
-                 helper.success(res,"successfully added selfie",data)
+                 
+                   let selfie_arr = []
+                   for (let i = 0; i < req.files.length; i++) {
+                    selfie_arr.push({
+                        _id: ObjectId(),
+                        selfie: req.files[i].filename
+                          })
+                     }
+                    console.log(selfie_arr)
+
+                let update = await userTable.findByIdAndUpdate({'_id':req.userData._id},{$set:{selfie:selfie_arr}})
+           if(update){
+                 console.log(update)
+                 let found = await userTable.findOne({'_id':req.userData._id})
+                 if(found){
+                  helper.success(res,"selfies",found.selfie)
+                 }
+                else{
+                  helper.not_found(res,"user not found")
+                }
              }
            else{
            helper.db_errorwithoutE(res)
@@ -531,46 +530,32 @@ exports.selfiebook = async(req,res,next)=>{
             }
 
     }
-    
-    else{
-       let is_selfies = await selfieTable.findOne({'user_Id':req.userData._id})
-       if(is_selfies){
-          console.log(is_selfies)
-          helper.success(res,"selfies",is_selfies)
-       }
-       else{
-         console.log("not found first take some selfie")
-           helper.not_found(res,"not found first take some selfie")
-       }
+    else {//user wants to fetch selfies when check_selfie = 0
+      console.log(found.selfie)
+    if(found.selfie.length >0){
+         console.log("suces")
+         console.log(found.selfie)
+        helper.success(res,"selfies",found.selfie)
     }
+       else{
+         console.log(" not success")
+          console.log(" first take some selfie")
+        helper.not_found(res,"not found first take some selfie")
+       }
+       }
+    
   }
   else{
     console.log("user not found")//user not found in table
     helper.not_found(res,"user not found")
   }
-  }
+  
+}
   catch(err){
     helper.went_wrong(res,err)
   }
 }
-exports.getselfiebook = async(req,res,next)=>{
-  try{
-    console.log(req.userData)
-    console.log(req.userData._id)
-    let selfiedata = await selfieTable.find({'user_Id':req.userData._id},{status:0,updated_at:0,created_at:0})
-    if(selfiedata){
-       console.log(selfiedata)
-       helper.success(res,"all selfies",selfiedata)
-    }
-    else{
-      console.log("no selfie added")
-      helper.not_found(res,"no selfie added")
-    }
-  }
-  catch(err){
-    helper.went_wrong(res,err)
-  }
-}
+
 exports.Setting = async(req,res,next)=>{
   try{
      console.log("heyy");
@@ -636,7 +621,7 @@ exports.logout = async(req,res,next)=>{
     console.log(data)
     console.log(data.device_type)
     console.log(data.device_token)
-       if(data.device_type && data.device_token){
+      //  if(data.device_type && data.device_token){
         let update = await userTable.findByIdAndUpdate({'_id':req.userData._id},{$set:{'device_type':'','device_token':''}})
           if(update){
             console.log("updated successfully")
@@ -646,11 +631,11 @@ exports.logout = async(req,res,next)=>{
             console.log("server error")
             helper.db_errorwithoutE(res)
           }
-        }
-           else{
-          console.log("please enter device type and device token during register")
-           helper.login_failed(res,"please login again fill device type and device token")
-    }
+        // }
+    //        else{
+    //       console.log("please enter device type and device token during register")
+    //        helper.login_failed(res,"please login again fill device type and device token")
+    // }
   }
    else{
      console.log("user not found")
@@ -685,4 +670,219 @@ exports.deleteAccount = async(req,res,next)=>{
    catch(err){
      helper.went_wrong(res,err)
    }
+}
+exports.deleteSelfie = async(req,res,next)=>{
+  try{
+  console.log(req.userData)
+  let found = await userTable.findOne({'_id':req.userData._id})
+  if(found){
+    console.log(found)
+    // console.log(found.selfie)
+     
+    const v = new Validator(req.body,{
+      selfie_id:'required'
+   })
+   const matched = await v.check();
+   let selfie_id=v.errors.selfie_id?v.errors.selfie_id.message:''
+
+  if(!matched){
+        let err=selfie_id
+     helper.validation_error(res,err)
+  }
+   else{
+
+    let images= found.selfie;
+    let new_arr = []
+    let already = 0;
+    for(let img of images ){
+      console.log(img._id)
+      console.log(img.selfie)
+       
+  
+      if(req.body.selfie_id == img._id){
+        already = already+1;
+           console.log("found equal"+img.selfie)
+          
+           let url = img.selfie;
+        //    console.log(url);
+        //  if(url.length == 0){
+        //    console.log("already deleted no such file found")
+          //  helper.not_found(res,"not found already deleted")
+        
+          // console.log("already val "+already);
+        //  }
+  //  else{
+        // console.log("to delete")
+        let dir='./public/images'
+        // let url=img.selfie;
+        fs.unlinkSync(dir+'/'+url)//deleting picture from folder
+        console.log("deleted")
+        // new_arr.push({
+        //   _id : img._id,
+        //   selfie: ''
+        // })
+      // }
+      }
+    else{
+      new_arr.push({
+        _id:img._id,
+        selfie:img.selfie
+      })
+    }
+    }
+     
+    
+    // console.log("updated arr"+new_arr)
+    // res.send(new_arr)
+    if(already){
+
+      console.log("checking 1")
+       let update = await userTable.findByIdAndUpdate({'_id':req.userData._id},{$set:{selfie:new_arr}})
+       if(update){
+        let found = await userTable.findOne({'_id':req.userData._id})
+        if(found){
+          helper.success(res,"successfully deleted",found.selfie)
+         }
+        else{
+          helper.not_found(res,"user not found")
+        }
+       }
+       else{
+        console.log("server errror");
+        helper.db_errorwithoutE(res)
+       }
+
+  }
+      else{
+        // console.log("already deleted")
+        // helper.not_found(res,"already deleted")
+       console.log("already deleted")
+      helper.not_found(res,"already deleted")
+
+      }
+  }
+}
+  else{
+    console.log("not found in the table")
+    helper.not_found(res,"not found in the table")
+}
+  }
+catch(err){
+  helper.went_wrong(res,err)
+}
+}
+exports.matching = async(req,res,next)=>{
+  try{
+    const v = new Validator(req.body,{
+      liked_userId:'required',
+      like:'required|integer'
+   })
+   const matched = await v.check();
+   let liked_userId=v.errors.liked_userId?v.errors.liked_userId.message:''
+   let like=v.errors.like?v.errors.like.message:''
+  if(!matched){
+        let err=liked_userId+like
+     helper.validation_error(res,err)
+  }
+   else{
+
+    console.log(req.userData)
+     let found = await userTable.findOne({'_id':req.userData._id})
+     if(found){
+     let set = await matchtable.create({
+            user_Id:req.userData._id,
+            liked_userId:req.body.liked_userId,
+            like:req.body.like
+      })
+      if(set){
+          console.log("saved data"+set.liked_userId)
+          let likedDetails = await userTable.findOne({'_id':set.liked_userId})
+          if(likedDetails){
+            console.log(likedDetails)
+          helper.success(res,"succesfully set status of like",likedDetails)
+          }
+          else{
+            console.log("user not found")
+            helper.not_found(res,"user not found")
+          }
+      }
+      else{
+        console.log("server error")
+        helper.db_error(res,e)
+      } 
+     }
+    else{
+      console.log("not found in the db")
+      helper.not_found(res,"not found in the db")
+    }
+  }
+}
+    catch(err){
+      helper.went_wrong(res,err)
+  }
+}
+exports.newMatches = async(req,res,next)=>{
+  try{
+    console.log("hii")
+    console.log(req.userData._id)
+    let logged_id = req.userData._id
+    console.log(logged_id)
+    let found = await userTable.findOne({'_id':req.userData._id})
+    if(found){
+      console.log(found)
+      let alluser = await matchtable.find({liked_userId:req.userData._id,like:1},{user_Id:1,_id:0});
+      
+      if(alluser){
+        console.log("all users who liked logged users"+alluser)//all users who liked logged users
+      
+      let user_Ids = alluser.map(arr=>arr['user_Id'])
+      let all_newmatchesIDs = [];
+      // console.log(user_Ids)
+      for(user_Id of user_Ids){
+        console.log("in loop"+user_Id)
+         let result = await matchtable.aggregate([
+           { "$match":{
+               'user_Id': ObjectId(logged_id),
+               'liked_userId': ObjectId(user_Id),
+                'like':1
+            } 
+          },
+          ])
+          console.log("aggregate result"+result)
+          result.forEach(async(element)=>{
+            console.log("final user of all matches"+element.liked_userId)
+            all_newmatchesIDs.push(element.liked_userId)
+            // console.log("matches array"+all_newmatches)
+          }) 
+          console.log("matches array id "+all_newmatchesIDs)
+      }
+     
+    let matcheduser_details =[]
+    for(let all_newmatchesID of all_newmatchesIDs){
+      console.log(all_newmatchesID)
+      let user = await userTable.findOne({'_id':all_newmatchesID})//finding matched user details
+      // {email_id:1,first_name:1,birthday:1,gender:1,profile:1,age:1,tittle:1,work:1,bio:1,education:1})
+      if(user){
+            matcheduser_details.push(user)
+      }
+      else{
+        console.log("user not found")
+        helper.not_found(res,"user not found")
+      }
+    }
+      console.log("final res"+matcheduser_details)
+      helper.success(res,"matched user",matcheduser_details)
+    }
+    else{
+      console.log("not found")
+      helper.not_found(res,"user not found")
+    }
+  }
+  else{
+    helper.not_found(res,"no user liked loggedIn user")
+  }
+  }
+  catch(err){
+    helper.went_wrong(res,err)
+}
 }

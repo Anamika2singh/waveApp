@@ -1,5 +1,6 @@
 require('dotenv').config()
 const config= require('./config/app');
+
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose')
@@ -16,4 +17,9 @@ app.use(express.static('public/images'));
 app.use(bodyparser.json({extended:true}))
 app.use(bodyparser.urlencoded({extended:true}))
 app.use('/',authroute);
-app.listen(config.PORT)
+const server = app.listen(config.PORT)
+const io = require('socket.io')(server)
+io.on('connection',(socket)=>{
+  console.log("connected to socket")
+  
+})

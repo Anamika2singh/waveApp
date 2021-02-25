@@ -31,4 +31,7 @@ router.get('/matches',middlewaretoken,authController.matches)
 router.post('/Setting',middlewaretoken,authController.Setting)
 router.get('/logout',middlewaretoken,authController.logout)
 router.get('/deleteAccount',middlewaretoken,authController.deleteAccount)
+router.post('/deleteSelfie',middlewaretoken,authController.deleteSelfie)
+router.post('/matching',middlewaretoken,authController.matching)
+router.get('/newMatches',middlewaretoken,authController.newMatches)
 module.exports = router;
